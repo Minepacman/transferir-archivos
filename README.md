@@ -1,16 +1,30 @@
-# Transferir archivos
+# Transferir
 
-Servidor HTTP local para pasar archivos entre equipos de la misma red con el navegador. Un solo archivo, sin dependencias (Python 3.8+).
+Carpetas compartidas por el navegador y replicadas entre las computadoras de la red. Un solo archivo, sin dependencias (Python 3.8+).
 
+## Qué hace
+- **Compartida** y **Personal 1–3**: cada una con su PIN de 6 dígitos. Se replican entre todas las computadoras unidas
+  (copia completa en `~/Transferencias/`, sincronización cada 10 s, borrados incluidos; gana el cambio más reciente).
+- **PIN de equipo** (uno por computadora, no se replica): navegar Escritorio, Documentos y la carpeta de usuario de
+  esa computadora desde el navegador (bajar y subir; no borra).
+- Descubrimiento automático por difusión UDP (puerto 47800) y lista de nodos conocidos; mensajes entre nodos firmados
+  con HMAC del secreto de la red. 5 PIN incorrectos → 1 minuto de espera.
+- Arranque automático: LaunchAgent (macOS), unidad systemd de usuario (Linux) o carpeta Inicio (Windows).
+
+## Uso
 ```bash
-python3 transferir.py                 # comparte ~/Transferencias, puerto 8000, PIN al azar
-python3 transferir.py --carpeta ~/Descargas --puerto 9000 --pin 1234
-python3 transferir.py --sin-pin       # sin PIN (cualquiera en la red puede entrar)
+python3 transferir.py --instalar                       # primera computadora: crea la red y arranca sola
+python3 transferir.py --info                           # direcciones, PINs y código de unión
+python3 transferir.py --unirse http://IP:8000 --clave CODIGO   # otra computadora: se une, copia y arranca sola
+python3 transferir.py --desinstalar                    # quita el arranque automático
 ```
+Teléfonos: abrir `http://IP:8000` y escribir un PIN. Registro en `~/.transferir/registro.log`.
 
-Al arrancar imprime la dirección (`http://<ip>:8000`) y el PIN. En el otro equipo o teléfono: abrir la dirección,
-escribir el PIN, arrastrar archivos para subirlos o tocar uno de la lista para bajarlo.
+## SMB (explorador de archivos)
+Además del navegador, las computadoras pueden abrir las carpetas por SMB con la cuenta del sistema:
+- macOS: Ajustes → General → Compartir → Compartir archivos (y en Opciones, "Compartir archivos con Windows" para la
+  cuenta). Agregar carpetas: `sudo sharing -a ~/Transferencias -S Transferencias`. Conectar: Finder → Ir → Conectarse
+  al servidor → `smb://IP`.
+- Windows: `\\IP` en el Explorador. Linux: `smb://IP` en el gestor de archivos.
 
-- Las subidas no sobrescriben: si el nombre existe se guarda como `nombre (1).ext`.
-- Solo se aceptan nombres de archivo simples (sin carpetas ni `..`); se escribe a un `.parcial` y se renombra al terminar.
-- Pensado para redes de confianza: va por HTTP sin cifrar.
+Pensado para redes de confianza: HTTP sin cifrar.
